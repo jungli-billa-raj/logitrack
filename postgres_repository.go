@@ -24,6 +24,7 @@ func (r *PostgresRepository) DispatchShipment(ctx context.Context, order Dispatc
 	defer tx.Rollback(ctx)
 
 	// SQL queries go here
+
 	// 1. loop through the items and deduct quantities from the inventory
 	for _, item := range order.Items {
 		query := `
@@ -36,6 +37,7 @@ func (r *PostgresRepository) DispatchShipment(ctx context.Context, order Dispatc
 			return err
 		}
 	}
+
 	// 2. Update the truck status to BUSY
 	truckQuery := `
 	UPDATE trucks
@@ -45,6 +47,7 @@ func (r *PostgresRepository) DispatchShipment(ctx context.Context, order Dispatc
 	if err != nil {
 		return err
 	}
+
 	// 5. Create the shipment master record and return its new ID
 	var shipmentID string
 	shipmentQuery := `
@@ -57,7 +60,57 @@ func (r *PostgresRepository) DispatchShipment(ctx context.Context, order Dispatc
 		return err
 	}
 
-	// 6.
+	// 6. Insert individual items into the shipment items junction table
+	for _, item := range order.Items {
+		itemQuery := `
+		INSERT INTO shipment_items
+		(shipment_id, inventory_id, quantity_shipped)
+		VALUES ($1,$2,$3)`
 
-	return nil
+		_, err = tx.Exec(ctx, itemQuery, shipmentID, item.InventoryID, item.Quantity)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit(ctx)
+}
+
+func (r *PostgresRepository) GetWarehouseInventory(ctx context.Context, warehouse_id string) ([]InventoryItem, error) {
+	// tx is transaction block of pgx
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	defer tx.Rollback(ctx)
+
+	query := `
+	SELECT item_name, quantity
+	FROM inventory
+	WHERE warehouse_id = $1`
+
+	rows, err := tx.Query(ctx, query, warehouse_id)
+	defer rows.Close() // why? how can memeory leaks occur here?
+
+	items := []InventoryItem{}
+
+	for rows.Next() {
+		var name string
+		var qty int
+
+		err = rows.Scan(&name, &qty)
+		if err != nil {
+			return nil, err
+		}
+
+		items = append(items, InventoryItem{ItemName: name, Quantity: qty})
+
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+
 }

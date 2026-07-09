@@ -14,6 +14,12 @@ type DispatchOrder struct {
 	Items               []ShipmentItem
 }
 
+type InventoryItem struct {
+	ItemName string
+	Quantity int
+}
+
 type LogisticsRepository interface {
 	DispatchShipment(cxt context.Context, order DispatchOrder) error
+	GetWarehouseInventory(ctx context.Context, warehouseID string) ([]InventoryItem, error)
 }
