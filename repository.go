@@ -19,7 +19,13 @@ type InventoryItem struct {
 	Quantity int
 }
 
+type ShipmentStatus struct {
+	OriginWarehouseID      string
+	DestinationWarehouseID string
+	TruckLicenseNumber     string
+}
 type LogisticsRepository interface {
 	DispatchShipment(cxt context.Context, order DispatchOrder) error
 	GetWarehouseInventory(ctx context.Context, warehouseID string) ([]InventoryItem, error)
+	GetShipment(ctx context.Context, shipmentID string) (ShipmentStatus, error)
 }

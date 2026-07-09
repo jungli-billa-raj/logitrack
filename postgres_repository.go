@@ -29,7 +29,7 @@ func (r *PostgresRepository) DispatchShipment(ctx context.Context, order Dispatc
 	for _, item := range order.Items {
 		query := `
 		UPDATE inventory 
-		SET quantity = quantity = $1
+		SET quantity = quantity - $1
 		WHERE id = $2 AND warehouse_id = $3`
 
 		_, err := tx.Exec(ctx, query, item.Quantity, item.InventoryID, order.OriginWarehouseID)
@@ -76,21 +76,17 @@ func (r *PostgresRepository) DispatchShipment(ctx context.Context, order Dispatc
 	return tx.Commit(ctx)
 }
 
+// An endpoint to see what items are currently sitting in a specific warehouse
 func (r *PostgresRepository) GetWarehouseInventory(ctx context.Context, warehouse_id string) ([]InventoryItem, error) {
-	// tx is transaction block of pgx
-	tx, err := r.pool.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	defer tx.Rollback(ctx)
-
 	query := `
 	SELECT item_name, quantity
 	FROM inventory
 	WHERE warehouse_id = $1`
 
-	rows, err := tx.Query(ctx, query, warehouse_id)
+	rows, err := r.pool.Query(ctx, query, warehouse_id)
+	if err != nil {
+		return nil, err
+	}
 	defer rows.Close() // why? how can memeory leaks occur here?
 
 	items := []InventoryItem{}
@@ -113,4 +109,25 @@ func (r *PostgresRepository) GetWarehouseInventory(ctx context.Context, warehous
 	}
 	return items, nil
 
+}
+
+// An endpoint to fetch a single shipment's details, including the tracking truck's license plate.
+
+func (r *PostgresRepository) GetShipment(ctx context.Context, shipmentID string) (ShipmentStatus, error) {
+	query := `
+		SELECT 
+			s.origin_warehouse_id, 
+			s.destination_warehouse_id, 
+			t.license_plate
+		FROM shipments s
+		LEFT JOIN trucks t ON s.truck_id = t.id
+		WHERE s.id = $1`
+
+	var origin, destination, license string
+
+	err := r.pool.QueryRow(ctx, query, shipmentID).Scan(&origin, &destination, &license)
+	if err != nil {
+		return ShipmentStatus{}, err
+	}
+	return ShipmentStatus{OriginWarehouseID: origin, DestinationWarehouseID: destination, TruckLicenseNumber: license}, nil
 }
