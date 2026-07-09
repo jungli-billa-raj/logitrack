@@ -1,0 +1,4 @@
+format:
+postgres://username:password@host:port/database_name?sslmode=disable
+
+postgres://postgres:MySecretPassword123@localhost:5432/logitrack?sslmode=disable
