@@ -37,3 +37,11 @@ CREATE TABLE shipments (
     -- Database rule: Can't ship to the exact same warehouse
     CONSTRAINT check_distinct_warehouses CHECK (origin_warehouse_id <> destination_warehouse_id)
 );
+
+-- 5. SHIPMENT ITEMS (Junction table for Many-to-Many relationship)
+CREATE TABLE shipment_items (
+    shipment_id UUID NOT NULL REFERENCES shipments(id) ON DELETE CASCADE,
+    inventory_id UUID NOT NULL REFERENCES inventory(id) ON DELETE RESTRICT,
+    quantity_shipped INT NOT NULL CHECK (quantity_shipped > 0),
+    PRIMARY KEY (shipment_id, inventory_id)
+);
