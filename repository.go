@@ -25,7 +25,7 @@ type ShipmentStatus struct {
 	TruckLicenseNumber     string
 }
 type LogisticsRepository interface {
-	DispatchShipment(cxt context.Context, order DispatchOrder) error
+	DispatchShipment(cxt context.Context, order DispatchOrder) (string, error)
 	GetWarehouseInventory(ctx context.Context, warehouseID string) ([]InventoryItem, error)
 	GetShipment(ctx context.Context, shipmentID string) (ShipmentStatus, error)
 }

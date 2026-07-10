@@ -14,11 +14,11 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 	return &PostgresRepository{pool: pool}
 }
 
-func (r *PostgresRepository) DispatchShipment(ctx context.Context, order DispatchOrder) error {
+func (r *PostgresRepository) DispatchShipment(ctx context.Context, order DispatchOrder) (string, error) {
 	// tx is transaction block of pgx
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	defer tx.Rollback(ctx)
@@ -34,7 +34,7 @@ func (r *PostgresRepository) DispatchShipment(ctx context.Context, order Dispatc
 
 		_, err := tx.Exec(ctx, query, item.Quantity, item.InventoryID, order.OriginWarehouseID)
 		if err != nil {
-			return err
+			return "", err
 		}
 	}
 
@@ -45,7 +45,7 @@ func (r *PostgresRepository) DispatchShipment(ctx context.Context, order Dispatc
 	WHERE id = $1`
 	_, err = tx.Exec(ctx, truckQuery, order.TruckID)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// 5. Create the shipment master record and return its new ID
@@ -57,7 +57,7 @@ func (r *PostgresRepository) DispatchShipment(ctx context.Context, order Dispatc
 
 	err = tx.QueryRow(ctx, shipmentQuery, order.OriginWarehouseID, order.DispatchWarehouseID, order.TruckID).Scan(&shipmentID)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// 6. Insert individual items into the shipment items junction table
@@ -69,11 +69,11 @@ func (r *PostgresRepository) DispatchShipment(ctx context.Context, order Dispatc
 
 		_, err = tx.Exec(ctx, itemQuery, shipmentID, item.InventoryID, item.Quantity)
 		if err != nil {
-			return err
+			return "", err
 		}
 	}
 
-	return tx.Commit(ctx)
+	return shipmentID, tx.Commit(ctx)
 }
 
 // An endpoint to see what items are currently sitting in a specific warehouse
