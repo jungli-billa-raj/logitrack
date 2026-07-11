@@ -27,6 +27,7 @@ func (s *Server) routes() {
 	s.router.HandleFunc("GET /health", s.handleHealth())
 	s.router.HandleFunc("POST /shipments", s.handleDispatchShipment())
 	s.router.HandleFunc("GET /warehouses/{id}/inventory", s.handleGetInventory())
+	s.router.HandleFunc("GET /shipments/{id}", s.handleGetShipment())
 }
 
 func loggingMiddleware(next http.Handler) http.Handler {
@@ -109,5 +110,30 @@ func (s *Server) handleGetInventory() http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(items)
 
+	}
+}
+
+func (s *Server) handleGetShipment() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		// 1. extract the shipmentID from URL Path
+		shipmentID := r.PathValue("id")
+		if shipmentID == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "ShipmentID not provided"})
+			return
+		}
+
+		// 2. Query the DB
+		status, err := s.repo.GetShipment(r.Context(), shipmentID)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(status)
 	}
 }
