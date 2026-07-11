@@ -6,7 +6,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func connectDB(ctx context.Context, connStr string) (*pgxpool.Pool, error) {
+func ConnectDB(ctx context.Context, connStr string) (*pgxpool.Pool, error) {
 	pool, err := pgxpool.New(ctx, connStr)
 
 	if err != nil {

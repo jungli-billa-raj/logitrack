@@ -20,7 +20,7 @@ func TestMain(m *testing.M) {
 	ctx := context.Background()
 	connStr := "postgres://postgres:MySecretPassword123@localhost:5432/logitrack?sslmode=disable"
 	var err error
-	testPool, err = connectDB(ctx, connStr)
+	testPool, err = ConnectDB(ctx, connStr)
 	if err != nil {
 		log.Fatalf("message: %v", err) // If DB is not connected then stop the test execution
 	}
