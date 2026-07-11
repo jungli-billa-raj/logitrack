@@ -3,26 +3,26 @@ package logitrack
 import "context"
 
 type ShipmentItem struct {
-	InventoryID string
-	Quantity    int
+	InventoryID string `json:"inventory_id"`
+	Quantity    int    `json:"quantity"`
 }
 
 type DispatchOrder struct {
-	OriginWarehouseID   string
-	DispatchWarehouseID string
-	TruckID             string
-	Items               []ShipmentItem
+	OriginWarehouseID   string         `json:"origin_warehouse_id"`
+	DispatchWarehouseID string         `json:"dispatch_warehouse_id"`
+	TruckID             string         `json:"truck_id"`
+	Items               []ShipmentItem `json:"items"`
 }
 
 type InventoryItem struct {
-	ItemName string
-	Quantity int
+	ItemName string `json:"item_name"`
+	Quantity int    `json:"quantity"`
 }
 
 type ShipmentStatus struct {
-	OriginWarehouseID      string
-	DestinationWarehouseID string
-	TruckLicenseNumber     string
+	OriginWarehouseID      string `json:"origin_warehouse_id"`
+	DestinationWarehouseID string `json:"destination_warehouse_id"`
+	TruckLicenseNumber     string `json:"truck_license_number"`
 }
 type LogisticsRepository interface {
 	DispatchShipment(cxt context.Context, order DispatchOrder) (string, error)

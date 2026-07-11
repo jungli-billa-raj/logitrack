@@ -21,10 +21,13 @@ func main() {
 	}
 	defer pool.Close()
 
-	// 2. Initialize the DB Storage Layer
+	// 2. Setup tables and seed data
+	err = devServerSetup(connStr, pool)
+
+	// 3. Initialize the DB Storage Layer
 	repo := logitrack.NewPostgresRepository(pool)
 
-	// 3. Initialize the server wrapper
+	// 4. Initialize the server wrapper
 	server := logitrack.NewServer(repo)
 
 	log.Println("🚀 LogiTrack HTTP server booting up on http://localhost:8080")
